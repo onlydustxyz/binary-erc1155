@@ -4,6 +4,7 @@
   "description": "Binary implementation of the ERC1155 multi-token standard",
   "repository": "git@github.com:MagicDustGG/binary-erc1155.git",
   "author": "MagicDust",
+  "license": "MIT",
   "keywords": [
     "blockchain",
     "ethereum",
