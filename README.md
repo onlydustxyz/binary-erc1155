@@ -10,6 +10,10 @@ The need for this type of ERC1155 comes from the reward logic, where a single ad
 
 This implementation is based on the [OpenZeppelin ERC1155 implementation](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC1155/ERC1155.sol) and takes advantage of the binary aspect to reduce operations' gas cost.
 
+## Limitations
+
+Due to the internal storage structure, the total number of different token types is limited to 256.
+
 # Installation
 
 ## Requirements

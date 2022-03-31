@@ -13,7 +13,7 @@
   ],
   "scripts": {
     "commit": "git-cz",
-    "compile": "yarn build",
+    "compile": "forge build",
     "lint": "yarn lint:sol && yarn prettier:check",
     "lint:sol": "solhint --config ./.solhint.json --max-warnings 0 \"contracts/**/*.sol\"",
     "preinstall": "which forge || echo 'Forge not installed. See to install https://book.getfoundry.sh/getting-started/installation.html it'",
