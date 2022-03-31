@@ -1,0 +1,40 @@
+{
+  "name": "binary-erc1155",
+  "version": "0.0.1",
+  "description": "Binary implementation of the ERC1155 multi-token standard",
+  "repository": "git@github.com:MagicDustGG/binary-erc1155.git",
+  "author": "MagicDust",
+  "keywords": [
+    "blockchain",
+    "ethereum",
+    "forge",
+    "smart-contracts",
+    "solidity"
+  ],
+  "scripts": {
+    "commit": "git-cz",
+    "compile": "yarn build",
+    "lint": "yarn lint:sol && yarn prettier:check",
+    "lint:sol": "solhint --config ./.solhint.json --max-warnings 0 \"contracts/**/*.sol\"",
+    "preinstall": "which forge || echo 'Forge not installed. See to install https://book.getfoundry.sh/getting-started/installation.html it'",
+    "postinstall": "husky install",
+    "prettier": "prettier --config ./.prettierrc.yaml --write \"**/*.{js,json,md,sol,ts}\"",
+    "prettier:check": "prettier --check --config ./.prettierrc.yaml \"**/*.{js,json,md,sol,ts}\"",
+    "test": "forge test -v"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^16.2.3",
+    "@commitlint/config-conventional": "^16.2.1",
+    "commitizen": "^4.2.4",
+    "commitlint": "^16.2.3",
+    "cz-conventional-changelog": "^3.3.0",
+    "eslint": "^8.12.0",
+    "eslint-config-prettier": "^8.5.0",
+    "husky": "^7.0.4",
+    "lint-staged": "^12.3.7",
+    "prettier": "^2.6.1",
+    "prettier-plugin-solidity": "^1.0.0-beta.19",
+    "solhint": "^3.3.7",
+    "solhint-plugin-prettier": "^0.0.5"
+  }
+}
