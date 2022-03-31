@@ -14,7 +14,7 @@ contract ContractTest is DSTest {
 
     function testUnpacking() public {
         uint256 packedNumber = 1356;
-        uint256[] memory unpackedNumber = _sut.unpackNumber(packedNumber);
+        uint8[] memory unpackedNumber = _sut.unpackNumber(packedNumber);
 
         assertEq(unpackedNumber.length, 5);
         assertEq(unpackedNumber[0], 2);
