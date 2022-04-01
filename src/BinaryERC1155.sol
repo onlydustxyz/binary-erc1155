@@ -45,7 +45,43 @@ contract BinaryERC1155 is ERC1155 {
         uint8 id_,
         bytes memory data_
     ) internal virtual {
-        _safeTransferFrom(address(0), to_, uint256(id_), 1, data_);
+        _safeTransferFrom(address(0), to_, id_, data_);
+    }
+
+    /// @notice Transfers a token id from one address to another
+    /// @dev Also accepts a zero address for the origin address when minting the token
+    /// @param from_ the address to transfer the token from, can be the zero address
+    /// @param to_ the address to transfer the token to
+    /// @param id_ the token ID to transfer
+    /// @param data_ extra data
+    function _safeTransferFrom(
+        address from_,
+        address to_,
+        uint8 id_,
+        bytes memory data_
+    ) internal virtual {
+        require(to_ != address(0), "ERC1155: transfer to the zero address");
+        require(id_ < 256, "BinaryERC1155: transfer for invalid token id");
+
+        address operator = _msgSender();
+        uint256[] memory ids = _asSingletonArrayCopy(id_);
+        uint256[] memory amounts = _asSingletonArrayCopy(1);
+
+        _beforeTokenTransfer(operator, from_, to_, ids, amounts, data_);
+
+        // This is a post-minting transfer, let's make some operations on the source address
+        if (from_ != address(0)) {
+            bool fromOwnsToken = _balances[from_].getBit(id_);
+            require(fromOwnsToken, "ERC1155: insufficient balance for transfer");
+            _balances[from_] = _balances[from_].clearBit(id_);
+        }
+        _balances[to_] = _balances[to_].setBit(id_);
+
+        emit TransferSingle(operator, from_, to_, id_, 1);
+
+        _afterTokenTransfer(operator, from_, to_, ids, amounts, data_);
+
+        _doSafeTransferAcceptanceCheckCopy(operator, from_, to_, id_, 1, data_);
     }
 
     /// @notice Override OpenZeppelin method and mark it abstract since the amount_
@@ -57,38 +93,15 @@ contract BinaryERC1155 is ERC1155 {
         bytes memory data_
     ) internal virtual override {}
 
-    /// @notice Override OpenZeppelin method
+    /// @notice Override OpenZeppelin method and mark it abstract since the amount_
+    /// parameter is not releveant in this binary implementation
     function _safeTransferFrom(
         address from_,
         address to_,
         uint256 id_,
         uint256 amount_,
         bytes memory data_
-    ) internal virtual override {
-        require(to_ != address(0), "ERC1155: transfer to the zero address");
-        require(id_ < 256, "BinaryERC1155: transfer for invalid token id");
-        require(amount_ <= 1, "BinaryERC1155: transfer amount must be less than or equal to 1");
-
-        address operator = _msgSender();
-        uint256[] memory ids = _asSingletonArrayCopy(id_);
-        uint256[] memory amounts = _asSingletonArrayCopy(amount_);
-
-        _beforeTokenTransfer(operator, from_, to_, ids, amounts, data_);
-
-        // This is a post-minting transfer, let's make some operations on the source address
-        if (from_ != address(0)) {
-            bool fromOwnsToken = _balances[from_].getBit(uint8(id_));
-            require(fromOwnsToken, "ERC1155: insufficient balance for transfer");
-            _balances[from_] = _balances[from_].clearBit(uint8(id_));
-        }
-        _balances[to_] = _balances[to_].setBit(uint8(id_));
-
-        emit TransferSingle(operator, from_, to_, id_, amount_);
-
-        _afterTokenTransfer(operator, from_, to_, ids, amounts, data_);
-
-        _doSafeTransferAcceptanceCheckCopy(operator, from_, to_, id_, amount_, data_);
-    }
+    ) internal virtual override {}
 
     /// @notice Unpack a provided number into its composing powers of 2
     /// @dev Iteratively shift the number's binary representation to the right and check for the result parity
