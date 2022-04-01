@@ -4,7 +4,7 @@ pragma solidity >=0.8.10 <0.9.0;
 import "ds-test/test.sol";
 import "./SystemUnderTest.sol";
 
-contract ContractTest is DSTest {
+contract BinaryERC1155Test is DSTest {
     SystemUnderTest private _sut;
 
     // solhint-disable no-empty-blocks
