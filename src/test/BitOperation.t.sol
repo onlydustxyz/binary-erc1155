@@ -34,4 +34,18 @@ contract BitOperationTest is DSTest {
             assertEq(clearedNumber, input_);
         }
     }
+
+    function testSetBit(uint256 input_, uint8 bitIndex_) public {
+        if (!input_.getBit(bitIndex_)) {
+            // avoid uint256 overflow
+            cheats.assume(input_ + 2**bitIndex_ < 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
+        }
+
+        uint256 setNumber = input_.setBit(bitIndex_);
+        if (input_.getBit(bitIndex_)) {
+            assertEq(setNumber, input_);
+        } else {
+            assertEq(setNumber, input_ + 2**bitIndex_);
+        }
+    }
 }
