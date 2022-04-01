@@ -2,6 +2,7 @@
 pragma solidity >=0.8.10 <0.9.0;
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 import "./BitOperation.sol";
 
 /**
@@ -14,9 +15,10 @@ import "./BitOperation.sol";
  */
 contract BinaryERC1155 is ERC1155 {
     using BitOperation for uint256;
+    using Address for address;
 
     // Mapping from accounts to packed token ids
-    mapping(address => uint256) internal _balances;
+    mapping(address => uint256) private _balances;
 
     // solhint-disable no-empty-blocks
     constructor(string memory uri_) ERC1155(uri_) {}
@@ -32,6 +34,36 @@ contract BinaryERC1155 is ERC1155 {
         uint256 packedBalance = _balances[account_];
 
         return packedBalance.getBit(uint8(id_)) ? 1 : 0;
+    }
+
+    /// @notice Override OpenZeppelin method
+    function _safeTransferFrom(
+        address from,
+        address to,
+        uint256 id,
+        uint256 amount,
+        bytes memory data
+    ) internal virtual override {
+        require(to != address(0), "ERC1155: transfer to the zero address");
+        require(id < 256, "ERC1155: transfer for invalid token id");
+
+        address operator = _msgSender();
+        uint256[] memory ids = _asSingletonArrayCopy(id);
+        uint256[] memory amounts = _asSingletonArrayCopy(amount);
+
+        _beforeTokenTransfer(operator, from, to, ids, amounts, data);
+
+        bool fromOwnsToken = _balances[from].getBit(uint8(id));
+        require(fromOwnsToken, "ERC1155: insufficient balance for transfer");
+
+        _balances[from] = _balances[from].clearBit(uint8(id));
+        _balances[to] = _balances[to].setBit(uint8(id));
+
+        emit TransferSingle(operator, from, to, id, amount);
+
+        _afterTokenTransfer(operator, from, to, ids, amounts, data);
+
+        _doSafeTransferAcceptanceCheckCopy(operator, from, to, id, amount, data);
     }
 
     /// @notice Unpack a provided number into its composing powers of 2
@@ -65,5 +97,39 @@ contract BinaryERC1155 is ERC1155 {
             // Update the free memory pointer according to the decomposition array size
             mstore(0x40, add(unpackedNumber, mul(add(1, mload(unpackedNumber)), 0x20)))
         }
+    }
+
+    /// @notice copied from OpenZeppelin's _doSafeTransferAcceptanceCheck method
+    /// The source function is private and cannot be overriden nor used
+    /// we then need to rename it
+    function _doSafeTransferAcceptanceCheckCopy(
+        address operator,
+        address from,
+        address to,
+        uint256 id,
+        uint256 amount,
+        bytes memory data
+    ) private {
+        if (to.isContract()) {
+            try IERC1155Receiver(to).onERC1155Received(operator, from, id, amount, data) returns (bytes4 response) {
+                if (response != IERC1155Receiver.onERC1155Received.selector) {
+                    revert("ERC1155: ERC1155Receiver rejected tokens");
+                }
+            } catch Error(string memory reason) {
+                revert(reason);
+            } catch {
+                revert("ERC1155: transfer to non ERC1155Receiver implementer");
+            }
+        }
+    }
+
+    /// @notice copied from OpenZeppelin's _asSingletonArray method
+    /// The source function is private and cannot be overriden nor used
+    /// we then need to rename it
+    function _asSingletonArrayCopy(uint256 element) private pure returns (uint256[] memory) {
+        uint256[] memory array = new uint256[](1);
+        array[0] = element;
+
+        return array;
     }
 }
