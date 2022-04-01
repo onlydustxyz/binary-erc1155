@@ -23,4 +23,10 @@ contract BinaryERC1155Test is DSTest {
         assertEq(unpackedNumber[3], 8);
         assertEq(unpackedNumber[4], 10);
     }
+
+    function testMinting(uint8 nftType) public {
+        assertEq(_sut.balanceOf(msg.sender, nftType), 0);
+        _sut.mint(msg.sender, nftType);
+        assertEq(_sut.balanceOf(msg.sender, nftType), 1);
+    }
 }
