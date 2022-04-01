@@ -7,6 +7,10 @@ contract SystemUnderTest is BinaryERC1155 {
     // solhint-disable no-empty-blocks
     constructor(string memory uri_) BinaryERC1155(uri_) {}
 
+    function mint(address to_, uint8 id_) public {
+        _mint(to_, id_, "");
+    }
+
     function unpackNumber(uint256 packedNumber_) public pure returns (uint8[] memory) {
         return _unpackNumber(packedNumber_);
     }

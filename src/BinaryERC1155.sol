@@ -36,6 +36,41 @@ contract BinaryERC1155 is ERC1155 {
         return packedBalance.getBit(uint8(id_)) ? 1 : 0;
     }
 
+    /// @notice Mint a new token of a specific id for a given address
+    /// @param to_ the address to mint the token for
+    /// @param id_ the token ID to mint
+    /// @param data_ extra data
+    function _mint(
+        address to_,
+        uint8 id_,
+        bytes memory data_
+    ) internal virtual {
+        require(to_ != address(0), "ERC1155: mint to the zero address");
+
+        address operator = _msgSender();
+        uint256[] memory ids = _asSingletonArrayCopy(id_);
+        uint256[] memory amounts = _asSingletonArrayCopy(1);
+
+        _beforeTokenTransfer(operator, address(0), to_, ids, amounts, data_);
+
+        _balances[to_] = _balances[to_].setBit(id_);
+
+        emit TransferSingle(operator, address(0), to_, id_, 1);
+
+        _afterTokenTransfer(operator, address(0), to_, ids, amounts, data_);
+
+        _doSafeTransferAcceptanceCheckCopy(operator, address(0), to_, id_, 1, data_);
+    }
+
+    /// @notice Override OpenZeppelin method and mark it abstract since the amount_
+    /// parameter is not releveant in this binary implementation
+    function _mint(
+        address to_,
+        uint256 id_,
+        uint256 amount_,
+        bytes memory data_
+    ) internal virtual override {}
+
     /// @notice Override OpenZeppelin method
     function _safeTransferFrom(
         address from,
@@ -45,7 +80,8 @@ contract BinaryERC1155 is ERC1155 {
         bytes memory data
     ) internal virtual override {
         require(to != address(0), "ERC1155: transfer to the zero address");
-        require(id < 256, "ERC1155: transfer for invalid token id");
+        require(id < 256, "BinaryERC1155: transfer for invalid token id");
+        require(amount <= 1, "BinaryERC1155: transfer amount must be less than or equal to 1");
 
         address operator = _msgSender();
         uint256[] memory ids = _asSingletonArrayCopy(id);
