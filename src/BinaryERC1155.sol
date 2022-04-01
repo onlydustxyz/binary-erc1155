@@ -2,6 +2,7 @@
 pragma solidity >=0.8.10 <0.9.0;
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "./BitOperation.sol";
 
 /**
  * @dev Implementation of a binary multi-token.
@@ -12,6 +13,8 @@ import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
  * but they cannot have more than one token id
  */
 contract BinaryERC1155 is ERC1155 {
+    using BitOperation for uint256;
+
     // Mapping from accounts to packed token ids
     mapping(address => uint256) internal _balances;
 
@@ -28,7 +31,7 @@ contract BinaryERC1155 is ERC1155 {
 
         uint256 packedBalance = _balances[account_];
 
-        return (packedBalance / 2**id_) % 2;
+        return packedBalance.getBit(uint8(id_)) ? 1 : 0;
     }
 
     /// @notice Unpack a provided number into its composing powers of 2
