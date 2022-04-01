@@ -12,4 +12,8 @@ library BitOperation {
     function clearBit(uint256 input, uint8 index) external pure returns (uint256) {
         return input & ~(1 << index);
     }
+
+    function setBit(uint256 input, uint8 index) external pure returns (uint256) {
+        return input | (1 << index);
+    }
 }
