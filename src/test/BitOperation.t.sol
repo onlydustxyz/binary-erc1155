@@ -48,4 +48,13 @@ contract BitOperationTest is DSTest {
             assertEq(setNumber, input_ + 2**bitIndex_);
         }
     }
+
+    function testMatchesMask() public {
+        uint256 number = 682; // 0b1010101010
+        uint256 matchingMask = 42; // 0b101010
+        uint256 notMatchingMask = 46; // 0b101110
+
+        assertTrue(number.matchesMask(matchingMask));
+        assertTrue(!number.matchesMask(notMatchingMask));
+    }
 }
