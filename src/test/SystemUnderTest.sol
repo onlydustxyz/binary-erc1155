@@ -10,8 +10,4 @@ contract SystemUnderTest is BinaryERC1155 {
     function mint(address to_, uint8 id_) public {
         _mint(to_, id_, "");
     }
-
-    function unpackNumber(uint256 packedNumber_) public pure returns (uint8[] memory) {
-        return _unpackNumber(packedNumber_);
-    }
 }
