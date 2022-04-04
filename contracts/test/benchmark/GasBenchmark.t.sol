@@ -19,7 +19,7 @@ contract GasBenchmark is DSTest {
         _ozErc1155 = new OpenZeppelinERC1155("");
     }
 
-    function testMintingGasConsumptionMagicDust(uint8 nftType_) public {
+    function testMintingGasConsumptionBinary(uint8 nftType_) public {
         _mdErc1155.mint(msg.sender, nftType_);
     }
 
@@ -27,7 +27,7 @@ contract GasBenchmark is DSTest {
         _ozErc1155.mint(msg.sender, nftType_);
     }
 
-    function testBatchMintingGasConsumptionMagicDust(uint256 packedIds_) public {
+    function testBatchMintingGasConsumptionBinary(uint256 packedIds_) public {
         _mdErc1155.mintBatch(msg.sender, packedIds_);
     }
 
