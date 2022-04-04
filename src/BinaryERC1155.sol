@@ -71,6 +71,25 @@ contract BinaryERC1155 is ERC1155 {
         _safeBatchTransferFrom(address(0), to_, packedIds_, data_);
     }
 
+    /// @notice Burn a given token id for a given address
+    /// @param from_ the address to burn the token for
+    /// @param id_ the token ID to burn
+    function _burn(address from_, uint8 id_) internal virtual {
+        require(from_ != address(0), "ERC1155: burn from the zero address");
+
+        address operator = _msgSender();
+        uint256[] memory ids = _asSingletonArrayCopy(id_);
+        uint256[] memory amounts = _arrayOfOnes(1);
+        _beforeTokenTransfer(operator, from_, address(0), ids, amounts, "");
+
+        uint256 fromBalance = _balances[from_];
+        require(fromBalance.getBit(id_), "ERC1155: burn amount exceeds balance");
+        _balances[from_] = fromBalance.clearBit(id_);
+
+        emit TransferSingle(operator, from_, address(0), id_, 1);
+        _afterTokenTransfer(operator, from_, address(0), ids, amounts, "");
+    }
+
     /// @notice Transfers a token id from one address to another
     /// @dev Also accepts a zero address for the origin address when minting the token
     /// @param from_ the address to transfer the token from, can be the zero address
@@ -195,6 +214,14 @@ contract BinaryERC1155 is ERC1155 {
         uint256[] memory ids_,
         uint256[] memory amounts_,
         bytes memory data_
+    ) internal virtual override {}
+
+    /// @notice Override OpenZeppelin method and mark it abstract since the amount_
+    /// parameter is not releveant in this binary implementation
+    function _burn(
+        address from,
+        uint256 id,
+        uint256 amount
     ) internal virtual override {}
 
     /* ====== COPIED PRIVATE FUNCTIONS FROM OPENZEPELLIN ====== */

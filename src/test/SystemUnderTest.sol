@@ -14,4 +14,8 @@ contract SystemUnderTest is BinaryERC1155 {
     function mintBatch(address to_, uint256 packedIds_) public {
         _mintBatch(to_, packedIds_, "");
     }
+
+    function burn(address from_, uint8 id_) public {
+        _burn(from_, id_);
+    }
 }
