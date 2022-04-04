@@ -193,11 +193,10 @@ contract BinaryERC1155 is ERC1155 {
     /// @param length_ The length of the array
     /// @return array The array of length length_ filled with ones
     function _arrayOfOnes(uint256 length_) internal pure returns (uint256[] memory array) {
-        if (length_ == 0) {
-            return new uint256[](0);
-        }
-        for (uint256 i = 0; i < length_ - 1; ++i) {
-            array[i] = 1;
+        if (length_ != 0) {
+            for (uint256 i = 0; i < length_ - 1; ++i) {
+                array[i] = 1;
+            }
         }
     }
 
