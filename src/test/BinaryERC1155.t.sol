@@ -7,6 +7,8 @@ import "../BitOperation.sol";
 
 interface CheatCodes {
     function assume(bool) external;
+
+    function startPrank(address) external;
 }
 
 contract BinaryERC1155Test is DSTest {
@@ -77,5 +79,18 @@ contract BinaryERC1155Test is DSTest {
         cheats.assume(packedTypes_ > 0);
 
         _sut.burnBatch(msg.sender, packedTypes_);
+    }
+
+    function testTransfer(uint8 nftType_) public {
+        address newOwner = 0x19D1AfF9827034E7d340eC0fc8017c954b197aEE;
+        cheats.startPrank(msg.sender);
+
+        _sut.mint(msg.sender, nftType_);
+        assertEq(_sut.balanceOf(msg.sender, nftType_), 1);
+        assertEq(_sut.balanceOf(newOwner, nftType_), 0);
+
+        _sut.safeTransferFrom(msg.sender, newOwner, nftType_, 1, "");
+        assertEq(_sut.balanceOf(msg.sender, nftType_), 0);
+        assertEq(_sut.balanceOf(newOwner, nftType_), 1);
     }
 }
