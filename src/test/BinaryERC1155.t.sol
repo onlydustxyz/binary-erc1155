@@ -5,10 +5,15 @@ import "ds-test/test.sol";
 import "./SystemUnderTest.sol";
 import "../BitOperation.sol";
 
+interface CheatCodes {
+    function assume(bool) external;
+}
+
 contract BinaryERC1155Test is DSTest {
     using BitOperation for uint256;
 
     SystemUnderTest private _sut;
+    CheatCodes private cheats = CheatCodes(HEVM_ADDRESS);
 
     // solhint-disable no-empty-blocks
     function setUp() public {
@@ -27,6 +32,8 @@ contract BinaryERC1155Test is DSTest {
     }
 
     function testBatchMinting(uint256 packedTypes_) public {
+        cheats.assume(packedTypes_ > 0);
+
         _sut.mintBatch((msg.sender), packedTypes_);
 
         uint256[] memory types = packedTypes_.unpackIn2Radix();
@@ -52,5 +59,23 @@ contract BinaryERC1155Test is DSTest {
 
     function testFailBurningNoSupply(uint8 nftType_) public {
         _sut.burn(msg.sender, nftType_);
+    }
+
+    function testBatchBurning(uint256 packedTypes_) public {
+        cheats.assume(packedTypes_ > 0);
+
+        _sut.mintBatch(msg.sender, packedTypes_);
+        _sut.burnBatch(msg.sender, packedTypes_);
+
+        uint256[] memory types = packedTypes_.unpackIn2Radix();
+        for (uint256 i = 0; i < types.length; i++) {
+            assertEq(_sut.balanceOf(msg.sender, types[i]), 0);
+        }
+    }
+
+    function testFailBatchBurningNoSupply(uint256 packedTypes_) public {
+        cheats.assume(packedTypes_ > 0);
+
+        _sut.burnBatch(msg.sender, packedTypes_);
     }
 }

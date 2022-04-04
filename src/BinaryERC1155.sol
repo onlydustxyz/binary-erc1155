@@ -90,6 +90,30 @@ contract BinaryERC1155 is ERC1155 {
         _afterTokenTransfer(operator, from_, address(0), ids, amounts, "");
     }
 
+    /// @notice Burn a batch of token ids for a given address
+    /// @param from_ the address to burn the token for
+    /// @param packedIds_ the token ids to burn, packed as a uint256, each token id is the bit position
+    /// of the corresponding binary representation of this uint256
+    function _burnBatch(address from_, uint256 packedIds_) internal virtual {
+        require(from_ != address(0), "ERC1155: burn from the zero address");
+        require(packedIds_ > 0, "BinaryERC1155: burn of empty token ids");
+
+        address operator = _msgSender();
+        uint256[] memory ids = packedIds_.unpackIn2Radix();
+        uint256[] memory amounts = _arrayOfOnes(ids.length);
+
+        _beforeTokenTransfer(operator, from_, address(0), ids, amounts, "");
+
+        require(_balances[from_].matchesMask(packedIds_), "ERC1155: burn amount exceeds balance");
+        // Check for token balance has been done,
+        // now we can safely update the balances
+        _balances[from_] = _balances[from_] - packedIds_;
+
+        emit TransferBatch(operator, from_, address(0), ids, amounts);
+
+        _afterTokenTransfer(operator, from_, address(0), ids, amounts, "");
+    }
+
     /// @notice Transfers a token id from one address to another
     /// @dev Also accepts a zero address for the origin address when minting the token
     /// @param from_ the address to transfer the token from, can be the zero address
@@ -111,8 +135,8 @@ contract BinaryERC1155 is ERC1155 {
 
         _beforeTokenTransfer(operator, from_, to_, ids, amounts, data_);
 
-        // This is a post-minting transfer, let's make some operations on the source address
         if (from_ != address(0)) {
+            // This is not a minting transfer, let's make some operations on the source address
             bool fromOwnsToken = _balances[from_].getBit(id_);
             require(fromOwnsToken, "ERC1155: insufficient balance for transfer");
             _balances[from_] = _balances[from_].clearBit(id_);
@@ -140,6 +164,7 @@ contract BinaryERC1155 is ERC1155 {
         bytes memory data_
     ) internal virtual {
         require(to_ != address(0), "ERC1155: transfer to the zero address");
+        require(packedIds_ > 0, "BinaryERC1155: transfer of empty token ids");
         require(_balances[to_].negatesMask(packedIds_), "BinaryERC1155: transfer of already owned tokens");
 
         address operator = _msgSender();
@@ -222,6 +247,14 @@ contract BinaryERC1155 is ERC1155 {
         address from,
         uint256 id,
         uint256 amount
+    ) internal virtual override {}
+
+    /// @notice Override OpenZeppelin method and mark it abstract since the amounts_
+    /// parameter is not releveant in this binary implementation
+    function _burnBatch(
+        address from_,
+        uint256[] memory ids_,
+        uint256[] memory amounts_
     ) internal virtual override {}
 
     /* ====== COPIED PRIVATE FUNCTIONS FROM OPENZEPELLIN ====== */
