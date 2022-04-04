@@ -110,6 +110,26 @@ contract BinaryERC1155Test is DSTest {
         _assertOwns(newOwner, packedTypes_, 1);
     }
 
+    function testBalanceOfBatch() public {
+        uint256 packedTypes = 1024 + 16 + 4;
+        address[] memory addresses = new address[](2);
+        addresses[0] = 0x19D1AfF9827034E7d340eC0fc8017c954b197aEE;
+        addresses[1] = 0xAD15376edc4204CEfB4755879FA71c0A1f77Daf5;
+
+        uint256[] memory types = new uint256[](2);
+        types[0] = 10;
+        types[1] = 4;
+
+        _sut.mintBatch(addresses[0], packedTypes);
+        _sut.mintBatch(addresses[1], packedTypes);
+
+        uint256[] memory balances = _sut.balanceOfBatch(addresses, types);
+
+        assertEq(2, balances.length);
+        assertEq(1, balances[0]);
+        assertEq(1, balances[1]);
+    }
+
     function _assertOwns(
         address owner_,
         uint256 packedTypes_,
