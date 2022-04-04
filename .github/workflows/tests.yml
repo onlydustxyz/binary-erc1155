@@ -17,4 +17,5 @@ jobs:
           version: nightly
       - run: forge install
       - run: yarn
+      - run: yarn compile
       - run: yarn test
