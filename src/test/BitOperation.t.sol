@@ -58,6 +58,15 @@ contract BitOperationTest is DSTest {
         assertTrue(!number.matchesMask(notMatchingMask));
     }
 
+    function testNegatesMask() public {
+        uint256 number = 682; // 0b1010101010
+        uint256 matchingMask = 42; // 0b101010
+        uint256 negativeMask = 341; // 0b101010101
+
+        assertTrue(number.negatesMask(negativeMask));
+        assertTrue(!number.negatesMask(matchingMask));
+    }
+
     function testUnpacking() public {
         uint256 packedNumber = 1356;
         uint256[] memory unpackedNumber = packedNumber.unpackIn2Radix();
