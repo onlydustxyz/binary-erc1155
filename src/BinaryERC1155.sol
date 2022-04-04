@@ -78,7 +78,24 @@ contract BinaryERC1155 is ERC1155 {
         uint256 packedIds_,
         bytes memory data_
     ) internal virtual {
-        _safeBatchTransferFrom(address(0), to_, packedIds_, data_);
+        require(to_ != address(0), "ERC1155: transfer to the zero address");
+        require(_balances[to_].negatesMask(packedIds_), "BinaryERC1155: minting of already owned tokens");
+
+        address operator = _msgSender();
+        uint256[] memory ids = packedIds_.unpackIn2Radix();
+        uint256[] memory amounts = _arrayOfOnes(ids.length);
+
+        _beforeTokenTransfer(operator, address(0), to_, ids, amounts, data_);
+
+        // Check for origin balance and destination balances have been done,
+        // now we can safely update the balances
+        _balances[to_] = _balances[to_] + packedIds_;
+
+        emit TransferBatch(operator, address(0), to_, ids, amounts);
+
+        _afterTokenTransfer(operator, address(0), to_, ids, amounts, data_);
+
+        _doSafeBatchTransferAcceptanceCheckCopy(operator, address(0), to_, ids, amounts, data_);
     }
 
     /// @notice Burn a given token id for a given address
@@ -145,7 +162,7 @@ contract BinaryERC1155 is ERC1155 {
 
         address operator = _msgSender();
         uint256[] memory ids = _asSingletonArrayCopy(id_);
-        uint256[] memory amounts = _arrayOfOnes(1);
+        uint256[] memory amounts = _asSingletonArrayCopy(amount_);
 
         _beforeTokenTransfer(operator, from_, to_, ids, amounts, data_);
 
@@ -157,50 +174,50 @@ contract BinaryERC1155 is ERC1155 {
         }
         _balances[to_] = _balances[to_].setBit(castedId);
 
-        emit TransferSingle(operator, from_, to_, id_, 1);
+        emit TransferSingle(operator, from_, to_, id_, amount_);
 
         _afterTokenTransfer(operator, from_, to_, ids, amounts, data_);
 
-        _doSafeTransferAcceptanceCheckCopy(operator, from_, to_, id_, 1, data_);
+        _doSafeTransferAcceptanceCheckCopy(operator, from_, to_, id_, amount_, data_);
     }
 
     /// @notice Transfers a batch of token ids from one address to another
     /// @dev Also accepts a zero address for the origin address when minting the token
     /// @param from_ the address to transfer the token from, can be the zero address
     /// @param to_ the address to transfer the token to
-    /// @param packedIds_ the token ids to transfer, packed as a uint256, each token id is the bit position
-    /// of the corresponding binary representation of this uint256
+    /// @param ids_ the token ids to transfer
+    /// @param amounts_ the amounts of tokens to transfer, treated as being 1 for each token id
     /// @param data_ extra data
     function _safeBatchTransferFrom(
         address from_,
         address to_,
-        uint256 packedIds_,
+        uint256[] memory ids_,
+        uint256[] memory amounts_,
         bytes memory data_
-    ) internal virtual {
+    ) internal virtual override {
         require(to_ != address(0), "ERC1155: transfer to the zero address");
-        require(packedIds_ > 0, "BinaryERC1155: transfer of empty token ids");
-        require(_balances[to_].negatesMask(packedIds_), "BinaryERC1155: transfer of already owned tokens");
+        require(ids_.length == amounts_.length, "ERC1155: ids and amounts length mismatch");
+        uint256 packedIds = _pack(ids_);
+        require(_balances[to_].negatesMask(packedIds), "BinaryERC1155: transfer of already owned tokens");
 
         address operator = _msgSender();
+        uint256[] memory amounts = _arrayOfOnes(ids_.length);
 
-        uint256[] memory ids = packedIds_.unpackIn2Radix();
-        uint256[] memory amounts = _arrayOfOnes(ids.length);
-
-        _beforeTokenTransfer(operator, from_, to_, ids, amounts, data_);
+        _beforeTokenTransfer(operator, from_, to_, ids_, amounts, data_);
 
         // Check for origin balance and destination balances have been done,
         // now we can safely update the balances
         if (from_ != address(0)) {
-            require(_balances[from_].matchesMask(packedIds_), "ERC1155: insufficient balance for transfer");
-            _balances[from_] = _balances[from_] - packedIds_;
+            require(_balances[from_].matchesMask(packedIds), "ERC1155: insufficient balance for transfer");
+            _balances[from_] = _balances[from_] - packedIds;
         }
-        _balances[to_] = _balances[to_] + packedIds_;
+        _balances[to_] = _balances[to_] + packedIds;
 
-        emit TransferBatch(operator, from_, to_, ids, amounts);
+        emit TransferBatch(operator, from_, to_, ids_, amounts);
 
-        _afterTokenTransfer(operator, from_, to_, ids, amounts, data_);
+        _afterTokenTransfer(operator, from_, to_, ids_, amounts, data_);
 
-        _doSafeBatchTransferAcceptanceCheckCopy(operator, from_, to_, ids, amounts, data_);
+        _doSafeBatchTransferAcceptanceCheckCopy(operator, from_, to_, ids_, amounts, data_);
     }
 
     /// @notice Return an array filled with ones
@@ -214,17 +231,18 @@ contract BinaryERC1155 is ERC1155 {
         }
     }
 
-    /* ====== ABSTRACTED INTERNAL FUNCTIONS FROM OPENZEPELLIN ====== */
+    /// @notice Pack an array of uint256 into a uint256
+    /// @dev Pack values into a uint256, requiring the values to be less than 256
+    /// @param ids_ The values to pack
+    /// @return packed uint256 The packed values
+    function _pack(uint256[] memory ids_) internal pure returns (uint256 packed) {
+        for (uint256 i = 0; i < ids_.length; ++i) {
+            require(ids_[i] < 256, "BinaryERC1155: token id must be less than 256");
+            packed = packed.setBit(uint8(ids_[i]));
+        }
+    }
 
-    /// @notice Override OpenZeppelin method and mark it abstract since the amount_
-    /// parameter is not releveant in this binary implementation
-    function _safeBatchTransferFrom(
-        address from_,
-        address to_,
-        uint256[] memory ids_,
-        uint256[] memory amounts_,
-        bytes memory data_
-    ) internal virtual override {}
+    /* ====== ABSTRACTED INTERNAL FUNCTIONS FROM OPENZEPELLIN ====== */
 
     /// @notice Override OpenZeppelin method and mark it abstract since the amount_
     /// parameter is not releveant in this binary implementation
