@@ -88,7 +88,7 @@ contract BinaryERC1155 is ERC1155 {
 
         address operator = _msgSender();
         uint256[] memory ids = _asSingletonArrayCopy(id_);
-        uint256[] memory amounts = _asSingletonArrayCopy(1);
+        uint256[] memory amounts = _arrayOfOnes(1);
 
         _beforeTokenTransfer(operator, from_, to_, ids, amounts, data_);
 
@@ -149,7 +149,10 @@ contract BinaryERC1155 is ERC1155 {
     /// @param length_ The length of the array
     /// @return array The array of length length_ filled with ones
     function _arrayOfOnes(uint256 length_) internal pure returns (uint256[] memory array) {
-        for (uint256 i = 0; i < length_; ++i) {
+        if (length_ == 0) {
+            return new uint256[](0);
+        }
+        for (uint256 i = 0; i < length_ - 1; ++i) {
             array[i] = 1;
         }
     }
