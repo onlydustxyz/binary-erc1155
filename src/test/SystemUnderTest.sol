@@ -18,4 +18,8 @@ contract SystemUnderTest is BinaryERC1155 {
     function burn(address from_, uint8 id_) public {
         _burn(from_, id_);
     }
+
+    function burnBatch(address to_, uint256 packedIds_) public {
+        _burnBatch(to_, packedIds_);
+    }
 }
