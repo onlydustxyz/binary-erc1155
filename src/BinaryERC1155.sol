@@ -14,14 +14,22 @@ import "./BitOperation.sol";
  * but they cannot have more than one token id
  */
 contract BinaryERC1155 is ERC1155 {
+    /* ====== LIBRARY USAGE ====== */
+
     using BitOperation for uint256;
     using Address for address;
+
+    /* ====== PRIVATE VARIABLES ====== */
 
     // Mapping from accounts to packed token ids
     mapping(address => uint256) private _balances;
 
+    /* ====== CONSTRUCTOR ====== */
+
     // solhint-disable no-empty-blocks
     constructor(string memory uri_) ERC1155(uri_) {}
+
+    /* ====== PUBLIC FUNCTIONS ====== */
 
     /// @notice Gives the balance of the specified token ID for the specified account
     /// @param account_ the account to check the balance for
@@ -36,6 +44,8 @@ contract BinaryERC1155 is ERC1155 {
         return packedBalance.getBit(uint8(id_)) ? 1 : 0;
     }
 
+    /* ====== INTERNAL FUNCTIONS ====== */
+
     /// @notice Mint a new token of a specific id for a given address
     /// @param to_ the address to mint the token for
     /// @param id_ the token ID to mint
@@ -46,6 +56,19 @@ contract BinaryERC1155 is ERC1155 {
         bytes memory data_
     ) internal virtual {
         _safeTransferFrom(address(0), to_, id_, data_);
+    }
+
+    /// @notice Mint a batch of new tokens of a specific id for a given address
+    /// @param to_ the address to mint the tokens for
+    /// @param packedIds_ the token ids to transfer, packed as a uint256, each token id is the bit position
+    /// of the corresponding binary representation of this uint256
+    /// @param data_ extra data
+    function _mintBatch(
+        address to_,
+        uint256 packedIds_,
+        bytes memory data_
+    ) internal virtual {
+        _safeBatchTransferFrom(address(0), to_, packedIds_, data_);
     }
 
     /// @notice Transfers a token id from one address to another
@@ -61,7 +84,7 @@ contract BinaryERC1155 is ERC1155 {
         bytes memory data_
     ) internal virtual {
         require(to_ != address(0), "ERC1155: transfer to the zero address");
-        require(id_ < 256, "BinaryERC1155: transfer for invalid token id");
+        require(_balances[to_].getBit(id_) == false, "BinaryERC1155: transfer of already owned token");
 
         address operator = _msgSender();
         uint256[] memory ids = _asSingletonArrayCopy(id_);
@@ -84,14 +107,54 @@ contract BinaryERC1155 is ERC1155 {
         _doSafeTransferAcceptanceCheckCopy(operator, from_, to_, id_, 1, data_);
     }
 
-    /// @notice Override OpenZeppelin method and mark it abstract since the amount_
-    /// parameter is not releveant in this binary implementation
-    function _mint(
+    /// @notice Transfers a batch of token ids from one address to another
+    /// @dev Also accepts a zero address for the origin address when minting the token
+    /// @param from_ the address to transfer the token from, can be the zero address
+    /// @param to_ the address to transfer the token to
+    /// @param packedIds_ the token ids to transfer, packed as a uint256, each token id is the bit position
+    /// of the corresponding binary representation of this uint256
+    /// @param data_ extra data
+    function _safeBatchTransferFrom(
+        address from_,
         address to_,
-        uint256 id_,
-        uint256 amount_,
+        uint256 packedIds_,
         bytes memory data_
-    ) internal virtual override {}
+    ) internal virtual {
+        require(to_ != address(0), "ERC1155: transfer to the zero address");
+        require(_balances[to_].negatesMask(packedIds_), "BinaryERC1155: transfer of already owned tokens");
+
+        address operator = _msgSender();
+
+        uint256[] memory ids = packedIds_.unpackIn2Radix();
+        uint256[] memory amounts = _arrayOfOnes(ids.length);
+
+        _beforeTokenTransfer(operator, from_, to_, ids, amounts, data_);
+
+        // Check for origin balance and destination balances have been done,
+        // now we can safely update the balances
+        if (from_ != address(0)) {
+            require(_balances[from_].matchesMask(packedIds_), "ERC1155: insufficient balance for transfer");
+            _balances[from_] = _balances[from_] - packedIds_;
+        }
+        _balances[to_] = _balances[to_] + packedIds_;
+
+        emit TransferBatch(operator, from_, to_, ids, amounts);
+
+        _afterTokenTransfer(operator, from_, to_, ids, amounts, data_);
+
+        _doSafeBatchTransferAcceptanceCheckCopy(operator, from_, to_, ids, amounts, data_);
+    }
+
+    /// @notice Return an array filled with ones
+    /// @param length_ The length of the array
+    /// @return array The array of length length_ filled with ones
+    function _arrayOfOnes(uint256 length_) internal pure returns (uint256[] memory array) {
+        for (uint256 i = 0; i < length_; ++i) {
+            array[i] = 1;
+        }
+    }
+
+    /* ====== ABSTRACTED INTERNAL FUNCTIONS FROM OPENZEPELLIN ====== */
 
     /// @notice Override OpenZeppelin method and mark it abstract since the amount_
     /// parameter is not releveant in this binary implementation
@@ -103,38 +166,35 @@ contract BinaryERC1155 is ERC1155 {
         bytes memory data_
     ) internal virtual override {}
 
-    /// @notice Unpack a provided number into its composing powers of 2
-    /// @dev Iteratively shift the number's binary representation to the right and check for the result parity
-    /// @param packedNumber_ The number to decompose
-    /// @return unpackedNumber The array of powers of 2 composing the number
-    function _unpackNumber(uint256 packedNumber_) internal pure returns (uint8[] memory unpackedNumber) {
-        // solhint-disable no-inline-assembly
-        // Assembly is needed here to create a dynamic size array in memory instead of a storage one
-        assembly {
-            let currentPowerOf2 := 0
+    /// @notice Override OpenZeppelin method and mark it abstract since the amount_
+    /// parameter is not releveant in this binary implementation
+    function _safeBatchTransferFrom(
+        address from_,
+        address to_,
+        uint256[] memory ids_,
+        uint256[] memory amounts_,
+        bytes memory data_
+    ) internal virtual override {}
 
-            // solhint-disable no-empty-blocks
-            // This for loop is a while loop in disguise
-            for {
+    /// @notice Override OpenZeppelin method and mark it abstract since the amount_
+    /// parameter is not releveant in this binary implementation
+    function _mint(
+        address to_,
+        uint256 id_,
+        uint256 amount_,
+        bytes memory data_
+    ) internal virtual override {}
 
-            } gt(packedNumber_, 0) {
-                // Increase the power of 2 by 1 after each iteration
-                currentPowerOf2 := add(1, currentPowerOf2)
-                // Shift the input to the right by 1
-                packedNumber_ := shr(1, packedNumber_)
-            } {
-                // Check if the shifted input is odd
-                if eq(and(1, packedNumber_), 1) {
-                    // The shifter input is odd, let's add this power of 2 to the decomposition array
-                    mstore(unpackedNumber, add(1, mload(unpackedNumber)))
-                    mstore(add(unpackedNumber, mul(mload(unpackedNumber), 0x20)), currentPowerOf2)
-                }
-            }
-            // Set the length of the decomposition array
-            // Update the free memory pointer according to the decomposition array size
-            mstore(0x40, add(unpackedNumber, mul(add(1, mload(unpackedNumber)), 0x20)))
-        }
-    }
+    /// @notice Override OpenZeppelin method and mark it abstract since the amounts_
+    /// parameter is not releveant in this binary implementation
+    function _mintBatch(
+        address to_,
+        uint256[] memory ids_,
+        uint256[] memory amounts_,
+        bytes memory data_
+    ) internal virtual override {}
+
+    /* ====== COPIED PRIVATE FUNCTIONS FROM OPENZEPELLIN ====== */
 
     /// @notice copied from OpenZeppelin's _doSafeTransferAcceptanceCheck method
     /// The source function is private and cannot be overriden nor used
@@ -150,6 +210,32 @@ contract BinaryERC1155 is ERC1155 {
         if (to.isContract()) {
             try IERC1155Receiver(to).onERC1155Received(operator, from, id, amount, data) returns (bytes4 response) {
                 if (response != IERC1155Receiver.onERC1155Received.selector) {
+                    revert("ERC1155: ERC1155Receiver rejected tokens");
+                }
+            } catch Error(string memory reason) {
+                revert(reason);
+            } catch {
+                revert("ERC1155: transfer to non ERC1155Receiver implementer");
+            }
+        }
+    }
+
+    /// @notice copied from OpenZeppelin's _doSafeBatchTransferAcceptanceCheck method
+    /// The source function is private and cannot be overriden nor used
+    /// we then need to rename it
+    function _doSafeBatchTransferAcceptanceCheckCopy(
+        address operator,
+        address from,
+        address to,
+        uint256[] memory ids,
+        uint256[] memory amounts,
+        bytes memory data
+    ) private {
+        if (to.isContract()) {
+            try IERC1155Receiver(to).onERC1155BatchReceived(operator, from, ids, amounts, data) returns (
+                bytes4 response
+            ) {
+                if (response != IERC1155Receiver.onERC1155BatchReceived.selector) {
                     revert("ERC1155: ERC1155Receiver rejected tokens");
                 }
             } catch Error(string memory reason) {
