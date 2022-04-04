@@ -25,7 +25,7 @@ library BitOperation {
     /// @dev Iteratively shift the number's binary representation to the right and check for the result parity
     /// @param packedNumber_ The number to decompose
     /// @return unpackedNumber The array of powers of 2 composing the number
-    function unpackIn2Basis(uint256 packedNumber_) internal pure returns (uint256[] memory unpackedNumber) {
+    function unpackIn2Radix(uint256 packedNumber_) internal pure returns (uint256[] memory unpackedNumber) {
         // solhint-disable no-inline-assembly
         // Assembly is needed here to create a dynamic size array in memory instead of a storage one
         assembly {
