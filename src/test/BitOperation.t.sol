@@ -60,7 +60,7 @@ contract BitOperationTest is DSTest {
 
     function testUnpacking() public {
         uint256 packedNumber = 1356;
-        uint256[] memory unpackedNumber = packedNumber.unpackIn2Basis();
+        uint256[] memory unpackedNumber = packedNumber.unpackIn2Radix();
 
         assertEq(unpackedNumber.length, 5);
         assertEq(unpackedNumber[0], 2);
