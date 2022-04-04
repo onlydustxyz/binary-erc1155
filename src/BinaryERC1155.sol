@@ -29,6 +29,16 @@ contract BinaryERC1155 is ERC1155 {
     // solhint-disable no-empty-blocks
     constructor(string memory uri_) ERC1155(uri_) {}
 
+    /* ====== MODIFIERS ====== */
+
+    /// @notice Checkes if a provided uint256 can be casted as a uint8
+    /// @dev Verify that the provided value is within the range of uint8
+    /// @param value_ The value to be checked
+    modifier isUint8(uint256 value_) {
+        require(value_ < 256, "BinaryERC1155: value must be less than 256");
+        _;
+    }
+
     /* ====== PUBLIC FUNCTIONS ====== */
 
     /// @notice Gives the balance of the specified token ID for the specified account
@@ -55,7 +65,7 @@ contract BinaryERC1155 is ERC1155 {
         uint8 id_,
         bytes memory data_
     ) internal virtual {
-        _safeTransferFrom(address(0), to_, id_, data_);
+        _safeTransferFrom(address(0), to_, id_, 1, data_);
     }
 
     /// @notice Mint a batch of new tokens of a specific id for a given address
@@ -119,15 +129,19 @@ contract BinaryERC1155 is ERC1155 {
     /// @param from_ the address to transfer the token from, can be the zero address
     /// @param to_ the address to transfer the token to
     /// @param id_ the token ID to transfer
+    /// @param amount_ the token amount of tokens to transfer, must be 1
     /// @param data_ extra data
     function _safeTransferFrom(
         address from_,
         address to_,
-        uint8 id_,
+        uint256 id_,
+        uint256 amount_,
         bytes memory data_
-    ) internal virtual {
+    ) internal virtual override isUint8(id_) {
         require(to_ != address(0), "ERC1155: transfer to the zero address");
-        require(_balances[to_].getBit(id_) == false, "BinaryERC1155: transfer of already owned token");
+        require(amount_ == 1, "BinaryERC1155: transfer amount must be 1");
+        uint8 castedId = uint8(id_);
+        require(_balances[to_].getBit(castedId) == false, "BinaryERC1155: transfer of already owned token");
 
         address operator = _msgSender();
         uint256[] memory ids = _asSingletonArrayCopy(id_);
@@ -137,11 +151,11 @@ contract BinaryERC1155 is ERC1155 {
 
         if (from_ != address(0)) {
             // This is not a minting transfer, let's make some operations on the source address
-            bool fromOwnsToken = _balances[from_].getBit(id_);
+            bool fromOwnsToken = _balances[from_].getBit(castedId);
             require(fromOwnsToken, "ERC1155: insufficient balance for transfer");
-            _balances[from_] = _balances[from_].clearBit(id_);
+            _balances[from_] = _balances[from_].clearBit(castedId);
         }
-        _balances[to_] = _balances[to_].setBit(id_);
+        _balances[to_] = _balances[to_].setBit(castedId);
 
         emit TransferSingle(operator, from_, to_, id_, 1);
 
@@ -201,16 +215,6 @@ contract BinaryERC1155 is ERC1155 {
     }
 
     /* ====== ABSTRACTED INTERNAL FUNCTIONS FROM OPENZEPELLIN ====== */
-
-    /// @notice Override OpenZeppelin method and mark it abstract since the amount_
-    /// parameter is not releveant in this binary implementation
-    function _safeTransferFrom(
-        address from_,
-        address to_,
-        uint256 id_,
-        uint256 amount_,
-        bytes memory data_
-    ) internal virtual override {}
 
     /// @notice Override OpenZeppelin method and mark it abstract since the amount_
     /// parameter is not releveant in this binary implementation
