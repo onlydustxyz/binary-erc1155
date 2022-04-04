@@ -21,6 +21,10 @@ library BitOperation {
         return (input_ & mask_) == mask_;
     }
 
+    function negatesMask(uint256 input_, uint256 mask_) external pure returns (bool) {
+        return (input_ & mask_) == 0;
+    }
+
     /// @notice Unpack a provided number into its composing powers of 2
     /// @dev Iteratively shift the number's binary representation to the right and check for the result parity
     /// @param packedNumber_ The number to decompose
