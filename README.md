@@ -21,10 +21,14 @@ Due to the internal storage structure, the total number of different token types
 - [Foundry](https://github.com/gakonst/foundry) (many thanks to @gakonst for the great work with Foundry)
 - [Yarn](https://yarnpkg.com/)
 
-## Steps
+## Install
 
 - `yarn`
 
 # Testing
 
 - `yarn test`
+
+# Benchmark
+
+- `yarn gas-benchmark`
