@@ -41,7 +41,7 @@ contract BinaryERC1155 is ERC1155 {
 
     /* ====== PUBLIC FUNCTIONS ====== */
 
-    /// @notice Gives the balance of the specified token ID for the specified account
+    /// @notice Give the balance of the specified token ID for the specified account
     /// @param account_ the account to check the balance for
     /// @param id_ the token ID to check the balance of. Must be less than 256
     /// @return the balance of the token ID for the specified account
@@ -52,6 +52,28 @@ contract BinaryERC1155 is ERC1155 {
         uint256 packedBalance = _balances[account_];
 
         return packedBalance.getBit(uint8(id_)) ? 1 : 0;
+    }
+
+    /// @notice Give the balance of the specified token IDs for the specified accounts
+    /// @param accounts_ the accounts to check the balance for
+    /// @param ids_ the token IDs to check the balance of. Must all be less than 256
+    /// @return the balance of the token IDs for the specified accounts
+    function balanceOfBatch(address[] memory accounts_, uint256[] memory ids_)
+        public
+        view
+        virtual
+        override
+        returns (uint256[] memory)
+    {
+        require(accounts_.length == ids_.length, "ERC1155: accounts and ids length mismatch");
+
+        uint256[] memory balances = new uint256[](accounts_.length);
+
+        for (uint256 i = 0; i < accounts_.length; i++) {
+            balances[i] = balanceOf(accounts_[i], ids_[i]);
+        }
+
+        return balances;
     }
 
     /* ====== INTERNAL FUNCTIONS ====== */
