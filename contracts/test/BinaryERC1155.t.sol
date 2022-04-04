@@ -17,7 +17,6 @@ contract BinaryERC1155Test is DSTest {
     SystemUnderTest private _sut;
     CheatCodes private cheats = CheatCodes(HEVM_ADDRESS);
 
-    // solhint-disable no-empty-blocks
     function setUp() public {
         _sut = new SystemUnderTest("");
     }
