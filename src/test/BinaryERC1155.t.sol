@@ -42,4 +42,15 @@ contract BinaryERC1155Test is DSTest {
         uint256 overSupply = 2048 + 256 + 1;
         _sut.mintBatch(msg.sender, overSupply);
     }
+
+    function testBurning(uint8 nftType_) public {
+        _sut.mint(msg.sender, nftType_);
+        assertEq(_sut.balanceOf(msg.sender, nftType_), 1);
+        _sut.burn(msg.sender, nftType_);
+        assertEq(_sut.balanceOf(msg.sender, nftType_), 0);
+    }
+
+    function testFailBurningNoSupply(uint8 nftType_) public {
+        _sut.burn(msg.sender, nftType_);
+    }
 }
