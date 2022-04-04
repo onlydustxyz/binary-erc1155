@@ -38,10 +38,7 @@ contract BinaryERC1155Test is DSTest {
 
         _sut.mintBatch((msg.sender), packedTypes_);
 
-        uint256[] memory types = packedTypes_.unpackIn2Radix();
-        for (uint256 i = 0; i < types.length; i++) {
-            assertEq(_sut.balanceOf(msg.sender, types[i]), 1);
-        }
+        _assertOwns(msg.sender, packedTypes_, 1);
     }
 
     function testFailBatchMinting() public {
@@ -69,10 +66,7 @@ contract BinaryERC1155Test is DSTest {
         _sut.mintBatch(msg.sender, packedTypes_);
         _sut.burnBatch(msg.sender, packedTypes_);
 
-        uint256[] memory types = packedTypes_.unpackIn2Radix();
-        for (uint256 i = 0; i < types.length; i++) {
-            assertEq(_sut.balanceOf(msg.sender, types[i]), 0);
-        }
+        _assertOwns(msg.sender, packedTypes_, 0);
     }
 
     function testFailBatchBurningNoSupply(uint256 packedTypes_) public {
@@ -92,5 +86,50 @@ contract BinaryERC1155Test is DSTest {
         _sut.safeTransferFrom(msg.sender, newOwner, nftType_, 1, "");
         assertEq(_sut.balanceOf(msg.sender, nftType_), 0);
         assertEq(_sut.balanceOf(newOwner, nftType_), 1);
+    }
+
+    function testFailTransferNoSupply(uint8 nftType_) public {
+        address newOwner = 0x19D1AfF9827034E7d340eC0fc8017c954b197aEE;
+        cheats.startPrank(msg.sender);
+
+        _sut.safeTransferFrom(msg.sender, newOwner, nftType_, 1, "");
+    }
+
+    function testBatchTransfer(uint256 packedTypes_) public {
+        cheats.startPrank(msg.sender);
+
+        address newOwner = 0x19D1AfF9827034E7d340eC0fc8017c954b197aEE;
+        _sut.mintBatch(msg.sender, packedTypes_);
+        _assertOwns(msg.sender, packedTypes_, 1);
+
+        uint256[] memory ids = packedTypes_.unpackIn2Radix();
+        uint256[] memory amounts = _arrayOfOnes(ids.length);
+        _sut.safeBatchTransferFrom(msg.sender, newOwner, ids, amounts, "");
+
+        _assertOwns(msg.sender, packedTypes_, 0);
+        _assertOwns(newOwner, packedTypes_, 1);
+    }
+
+    function _assertOwns(
+        address owner_,
+        uint256 packedTypes_,
+        uint8 amount_
+    ) internal {
+        uint256[] memory types = packedTypes_.unpackIn2Radix();
+        for (uint256 i = 0; i < types.length; i++) {
+            assertEq(_sut.balanceOf(owner_, types[i]), amount_);
+        }
+    }
+
+    function _arrayOfOnes(uint256 length_) internal pure returns (uint256[] memory) {
+        uint256[] memory result = new uint256[](length_);
+
+        if (length_ != 0) {
+            for (uint256 i = 0; i < length_ - 1; ++i) {
+                result[i] = 1;
+            }
+        }
+
+        return result;
     }
 }
