@@ -1,6 +1,6 @@
 {
   "name": "@magicdust/binary-erc1155",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Binary implementation of the ERC1155 multi-token standard",
   "repository": "git@github.com:MagicDustGG/binary-erc1155.git",
   "author": "MagicDust",
